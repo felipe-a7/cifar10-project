@@ -1,6 +1,39 @@
-you need python 13.12 version
+HOW TO RUN THE PROJECT
 
-if test_data_loader.py failed because of the certificate, you need to activate the the python certificate 
+Requirements
+- Python 3.12
+- Install dependencies from `requirements.txt`
 
+Setup
+1. Create a virtual environment
+2. Activate the virtual environment
+3. Install dependencies:
+   pip install -r requirements.txt
 
-the command for seeing the CNN.keras file in output folder is : netron outputs/baseline_model.keras
+Certificate issue
+- If `test_data_loader.py` fails because of a certificate error, activate the Python certificates on your system, then run the test again.
+
+Recommended order for running the files
+1. `test_data_loader.py`
+   - Verifies that CIFAR-10 loads correctly
+
+2. `src/train_baseline.py`
+   - Trains the baseline CNN
+   - Evaluates the model
+   - Saves the trained model to the `outputs` folder
+
+3. `src/augmentation.py`
+   - Visualizes augmented images
+   - Trains the CNN using data augmentation
+   - Saves TensorBoard logs
+
+View the saved model
+- If the saved file is `outputs/CNN.keras`, run:
+  netron outputs/CNN.keras
+
+- If the saved file is `outputs/baseline_model.keras`, run:
+  netron outputs/baseline_model.keras
+
+View TensorBoard logs
+- Run:
+  tensorboard --logdir=logs/augmentation
