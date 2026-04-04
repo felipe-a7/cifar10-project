@@ -1,3 +1,34 @@
+"""
+train_baseline.py
+
+This file does three things:
+1. Loads and preprocesses the CIFAR-10 dataset.
+2. Trains the baseline CNN model on the training data.
+3. Evaluates the trained model on the test set and saves it
+   to the outputs folder.
+
+Why this file exists:
+- It keeps the full baseline CNN workflow in one place.
+- It combines model training, evaluation, and saving.
+- It makes the baseline experiment easier to run and manage.
+
+How to run:
+    python scripts/train_baseline.py
+
+What you will see:
+- Training progress for each epoch
+- Final test accuracy printed in the terminal
+- A saved model file in:
+    outputs/CNN.keras
+
+How to inspect the saved model later:
+    python
+
+Then inside Python:
+    from tensorflow.keras.models import load_model
+    model = load_model("outputs/CNN.keras")
+    model.summary()
+"""
 
 
 import os
