@@ -85,17 +85,52 @@ def predict(model, img_array, class_names=CIFAR10_CLASSES):
 
 def show_prediction(img_display, predicted_class, confidence):
     """
-    Display the image with the predicted label and confidence score.
+    Display the image alongside a confidence bar chart for all 10 classes.
+
+    Left: the image with predicted label and confidence as title.
+    Right: horizontal bar chart showing the model's confidence for every class.
 
     Args:
         img_display: Image array to display
         predicted_class: Predicted class name
-        confidence: Confidence score
+        confidence: Confidence score of the top prediction
     """
     plt.figure(figsize=(4, 4))
     plt.imshow(img_display)
     plt.title(f"Predicted: {predicted_class} ({confidence * 100:.1f}%)", fontsize=13)
     plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+
+def show_confidence_chart(model, img_array, class_names=CIFAR10_CLASSES):
+    """
+    Show a horizontal bar chart of the model's confidence scores for all 10 classes.
+
+    This makes it easy to see not just what the model predicted, but how
+    confident it was across every class — useful for spotting close calls.
+
+    Args:
+        model: Loaded Keras model
+        img_array: Preprocessed image array of shape (1, 32, 32, 3)
+        class_names: List of CIFAR-10 class names
+    """
+    predictions = model.predict(img_array, verbose=0)[0]
+    predicted_index = np.argmax(predictions)
+
+    colors = ["#4CAF50" if i == predicted_index else "#90CAF9" for i in range(len(class_names))]
+
+    plt.figure(figsize=(7, 4))
+    bars = plt.barh(class_names, predictions * 100, color=colors)
+    plt.xlabel("Confidence (%)")
+    plt.title("Prediction Confidence per Class")
+    plt.xlim(0, 100)
+
+    # Add percentage labels on each bar
+    for bar, score in zip(bars, predictions):
+        plt.text(bar.get_width() + 0.5, bar.get_y() + bar.get_height() / 2,
+                 f"{score * 100:.1f}%", va="center", fontsize=8)
+
     plt.tight_layout()
     plt.show()
 
@@ -144,8 +179,11 @@ def main():
     print(f"Predicted class: {predicted_class}")
     print(f"Confidence:      {confidence * 100:.1f}%")
 
-    # Show result
+    # Show image with prediction title
     show_prediction(img_display, predicted_class, confidence)
+
+    # Show confidence bar chart for all classes
+    show_confidence_chart(model, img_array)
 
 
 if __name__ == "__main__":
