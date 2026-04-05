@@ -124,12 +124,29 @@ def train_with_augmentation(x_train, y_train, x_test, y_test, datagen):
         histogram_freq=1
     )
 
+    # Stop training early if validation accuracy stops improving for 3 epochs
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor="val_accuracy",
+        patience=3,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    # Save the best model during training based on validation accuracy
+    checkpoint_path = os.path.join(project_root, "outputs", "CNN_augmented_best.keras")
+    model_checkpoint = tf.keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_path,
+        monitor="val_accuracy",
+        save_best_only=True,
+        verbose=1
+    )
+
     # Train the model using augmented batches
     history = model.fit(
         datagen.flow(x_train, y_train, batch_size=64),
         epochs=15,
         validation_data=(x_test, y_test),
-        callbacks=[tensorboard_callback],
+        callbacks=[tensorboard_callback, early_stopping, model_checkpoint],
         verbose=1
     )
 
