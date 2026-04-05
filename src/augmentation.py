@@ -45,6 +45,7 @@ def create_datagen():
         rotation_range=10,
         width_shift_range=0.05,
         height_shift_range=0.05,
+        zoom_range=0.1,
         horizontal_flip=True
     )
 
@@ -139,7 +140,94 @@ def train_with_augmentation(x_train, y_train, x_test, y_test, datagen):
     print("Augmented Test Loss:", test_loss)
     print("TensorBoard logs saved to:", log_dir)
 
-    return model, history
+    return model, history, test_acc
+
+
+def train_without_augmentation(x_train, y_train, x_test, y_test):
+    """
+    Train the baseline CNN model without any augmentation.
+
+    Args:
+        x_train: Training images
+        y_train: Training labels
+        x_test: Test images
+        y_test: Test labels
+
+    Returns:
+        model: Trained CNN model
+        history: Training history returned by model.fit()
+        test_acc: Final test accuracy
+    """
+    print("Starting baseline (no augmentation) training...")
+
+    model = build_baseline_cnn()
+
+    history = model.fit(
+        x_train,
+        y_train,
+        epochs=15,
+        batch_size=64,
+        validation_data=(x_test, y_test),
+        verbose=1
+    )
+
+    test_loss, test_acc = model.evaluate(x_test, y_test, verbose=1)
+    print("Baseline Test Accuracy:", test_acc)
+    print("Baseline Test Loss:", test_loss)
+
+    return model, history, test_acc
+
+
+def plot_comparison(history_baseline, history_augmented, acc_baseline, acc_augmented):
+    """
+    Plot training curves for baseline vs augmented training and print accuracy comparison.
+
+    Shows:
+    - Training accuracy over epochs for both runs
+    - Validation accuracy over epochs for both runs
+
+    Args:
+        history_baseline: History object from baseline training
+        history_augmented: History object from augmented training
+        acc_baseline: Final test accuracy of baseline model
+        acc_augmented: Final test accuracy of augmented model
+    """
+    epochs = range(1, len(history_baseline.history["accuracy"]) + 1)
+
+    plt.figure(figsize=(14, 5))
+
+    # --- Training Accuracy ---
+    plt.subplot(1, 2, 1)
+    plt.plot(epochs, history_baseline.history["accuracy"], label="Baseline Train")
+    plt.plot(epochs, history_augmented.history["accuracy"], label="Augmented Train")
+    plt.title("Training Accuracy: Baseline vs Augmented")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+
+    # --- Validation Accuracy ---
+    plt.subplot(1, 2, 2)
+    plt.plot(epochs, history_baseline.history["val_accuracy"], label="Baseline Val")
+    plt.plot(epochs, history_augmented.history["val_accuracy"], label="Augmented Val")
+    plt.title("Validation Accuracy: Baseline vs Augmented")
+    plt.xlabel("Epoch")
+    plt.ylabel("Accuracy")
+    plt.legend()
+
+    plt.tight_layout()
+    os.makedirs(os.path.join(project_root, "outputs"), exist_ok=True)
+    plt.savefig(os.path.join(project_root, "outputs", "augmentation_comparison.png"))
+    plt.show()
+
+    # Print accuracy comparison
+    print("\n--- Accuracy Comparison ---")
+    print(f"Baseline  Test Accuracy: {acc_baseline:.4f}")
+    print(f"Augmented Test Accuracy: {acc_augmented:.4f}")
+    diff = acc_augmented - acc_baseline
+    if diff > 0:
+        print(f"Augmentation improved accuracy by {diff:.4f}")
+    else:
+        print(f"Augmentation reduced accuracy by {abs(diff):.4f}")
 
 
 def main():
@@ -148,7 +236,9 @@ def main():
     - loads CIFAR-10 data
     - creates the augmentation generator
     - previews augmented images
-    - trains the CNN with augmentation
+    - trains baseline CNN (no augmentation) for comparison
+    - trains CNN with augmentation
+    - plots training curves for both and prints accuracy comparison
     """
     # Load dataset and class labels
     x_train, y_train, x_test, y_test, class_names = load_cifar10()
@@ -159,8 +249,18 @@ def main():
     # Show sample augmented images
     preview_augmentation(x_train, y_train, class_names, datagen)
 
-    # Train the model using augmentation
-    train_with_augmentation(x_train, y_train, x_test, y_test, datagen)
+    # Train baseline model (no augmentation)
+    _, history_baseline, acc_baseline = train_without_augmentation(
+        x_train, y_train, x_test, y_test
+    )
+
+    # Train model with augmentation
+    _, history_augmented, acc_augmented = train_with_augmentation(
+        x_train, y_train, x_test, y_test, datagen
+    )
+
+    # Plot and compare both runs
+    plot_comparison(history_baseline, history_augmented, acc_baseline, acc_augmented)
 
 
 # Run the script only when executed directly
