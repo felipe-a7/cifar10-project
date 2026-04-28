@@ -146,6 +146,35 @@ tensorboard --logdir=logs/augmentation
 ```bash
 python src/train_improved.py
 ```
+Trains the improved architecture with augmented data and adaptive callbacks. Run `src/train_baseline.py` first if `outputs/baseline_results.json` does not exist — it is needed to print the comparison table. Saves the best model to `outputs/CNN_improved.keras` and training curves to `outputs/`.
+
+To view TensorBoard logs after training:
+```bash
+tensorboard --logdir=logs/improved
+```
+
+### Model Evaluation + Grad-CAM
+```bash
+python src/evaluate_gradcam.py
+```
+Evaluates the improved CNN on the CIFAR-10 test set and generates:
+- confusion matrix heatmap
+- classification report (precision, recall, F1-score per class)
+- correct prediction examples with confidence scores
+- incorrect prediction examples with confidence scores
+- Grad-CAM visualisations showing where the model focuses
+Saved outputs:
+- outputs/confusion_matrix.png
+- outputs/classification_report.txt
+- outputs/correct_predictions.png
+- outputs/incorrect_predictions.png
+- outputs/gradcam_examples.png
+---
+
+## What Each File Does
+
+### `src/data_loader.py`
+Loads CIFAR-10 from Keras, normalises pixel values to [0,1], and one-hot encodes the labels. Returns train/test splits and class names.
 
 Trains the current best CIFAR-10 model. If `outputs/baseline_results.json` is missing, run `src/train_baseline.py` first so the script can print the comparison table.
 
@@ -165,6 +194,15 @@ tensorboard --logdir=logs/improved_v3
 
 #### Transfer learning with ResNet50
 
+### `src/evaluate_gradcam.py`
+- Loads the trained improved CNN from `outputs/CNN_improved.keras`
+- Evaluates the model on the CIFAR-10 test set
+- Generates a confusion matrix heatmap
+- Prints and saves a classification report
+- Shows correct and incorrect predictions with confidence scores
+- Implements Grad-CAM visualisations to highlight image regions the model focuses on
+- Prints the most common class confusions for error analysis
+---
 ```bash
 python src/transfer_learning.py
 ```
