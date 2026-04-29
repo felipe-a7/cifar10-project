@@ -2,7 +2,7 @@
 
 CNN-based image classification project covering both CIFAR-10 and CIFAR-100, with experiments ranging from a simple baseline CNN to transfer learning and a stronger residual CNN with progressive regularization. The repository is organized as a reproducible coursework-style project: training scripts, saved result files, prediction utilities, and lightweight tests are all included.
 
-The main outcome is a clear accuracy progression on CIFAR-10 from a 70.0% baseline to 92.14% test accuracy, then application of the same training lessons to CIFAR-100, where EfficientNetB3 transfer learning reaches 77.55% test accuracy.
+The main outcome is a clear accuracy progression on CIFAR-10 from a 69.48% baseline to 95.22% test accuracy with ResNet50 transfer learning, then application of the same training lessons to CIFAR-100, where EfficientNetB3 transfer learning reaches 77.46% test accuracy.
 
 ## Table of Contents
 
@@ -52,11 +52,17 @@ Dataset facts:
 │   ├── src/
 │   │   ├── data_loader.py
 │   │   ├── model_cnn.py
+│   │   ├── model_efficientnetv2.py
 │   │   ├── augmentation.py
+│   │   ├── augmentation_advanced.py
 │   │   ├── train.py
+│   │   ├── train_advanced.py
 │   │   ├── transfer_learning.py
 │   │   ├── predict.py
-│   │   └── evaluate_cifar100_and_compare.py
+│   │   ├── tta_predict.py
+│   │   ├── evaluate_cifar100_and_compare.py
+│   │   ├── summary_table.py
+│   │   └── check.py
 │   ├── outputs/
 │   ├── test/
 │   └── logs/
@@ -73,14 +79,14 @@ Dataset facts:
 
 ### CIFAR-10
 
-The table below uses the saved result files currently present in `outputs/`. All values are **test accuracy**.
+The table below uses the saved result files currently present in `cifar10/outputs/`. All values are **test accuracy**.
 
 | Model | Test Accuracy | Evidence | Main change |
 |---|---:|---|---|
-| Baseline CNN | 70.00% | `outputs/baseline_results.json` | 3-block plain CNN |
-| Improved CNN v1 | 86.18% | `outputs/improved_results.json` | BatchNorm, LeakyReLU, stronger head |
-| Improved CNN v2 | 91.53% | `outputs/improved_v2_results.json` | longer schedule, dropout, label smoothing |
-| Improved CNN v3 | **92.14%** | `outputs/improved_v3_results.json` | residual blocks, conv weight decay, stronger augmentation, cutout |
+| Baseline CNN | 69.48% | `cifar10/outputs/baseline_results.json` | 3-block plain CNN |
+| Improved CNN v1 | 86.52% | `cifar10/outputs/improved_results.json` | BatchNorm, LeakyReLU, stronger head |
+| Improved CNN v3 | **92.14%** | `cifar10/outputs/improved_v3_results.json` | residual blocks, conv weight decay, stronger augmentation, cutout |
+| ResNet50 transfer learning | **95.22%** | `cifar10/outputs/transfer_learning_results.json` | ImageNet pretraining, frozen then fine-tuned |
 
 ### CIFAR-100
 
@@ -88,7 +94,7 @@ The strongest committed CIFAR-100 result currently saved in the repository is th
 
 | Model | Test Accuracy | Evidence | Main change |
 |---|---:|---|---|
-| EfficientNetB3 transfer learning | **77.55%** | `cifar100/outputs/transfer_results.json` | pretrained backbone, cosine decay, label smoothing, fine-tuning top 50 layers |
+| EfficientNetB3 transfer learning | **77.46%** | `cifar100/outputs/transfer_results.json` | pretrained backbone, cosine decay, label smoothing, fine-tuning top 50 layers |
 
 Note:
 
@@ -133,97 +139,69 @@ Run commands from the repository root with the virtual environment activated.
 #### Baseline CNN
 
 ```bash
-python src/train_baseline.py
+python cifar10/src/train_baseline.py
 ```
 
-Trains the baseline model for 10 epochs, saves `outputs/CNN.keras`, writes `outputs/baseline_results.json`, and saves `outputs/baseline_training_curves.png`.
+Trains the baseline model for 10 epochs, saves `cifar10/outputs/CNN.keras`, writes `cifar10/outputs/baseline_results.json`, and saves `cifar10/outputs/baseline_training_curves.png`.
 
 #### Augmentation demo
 
 ```bash
-python src/augmentation.py
+python cifar10/src/augmentation.py
 ```
 
-Shows augmentation previews and runs a baseline-vs-augmented comparison experiment. Outputs include `outputs/augmentation_comparison.png` and TensorBoard logs in `logs/augmentation/`.
+Shows augmentation previews and runs a baseline-vs-augmented comparison experiment. Outputs include `cifar10/outputs/augmentation_comparison.png` and TensorBoard logs in `cifar10/logs/augmentation/`.
 
 View logs with:
 
 ```bash
-tensorboard --logdir=logs/augmentation
+tensorboard --logdir=cifar10/logs/augmentation
 ```
 
 #### Improved CNN v3
 
 ```bash
-python src/train_improved.py
-```
-Trains the improved architecture with augmented data and adaptive callbacks. Run `src/train_baseline.py` first if `outputs/baseline_results.json` does not exist — it is needed to print the comparison table. Saves the best model to `outputs/CNN_improved.keras` and training curves to `outputs/`.
-
-To view TensorBoard logs after training:
-```bash
-tensorboard --logdir=logs/improved
+python cifar10/src/train_improved.py
 ```
 
-### Model Evaluation + Grad-CAM
-```bash
-python src/evaluate_all_models.py
-```
-Evaluates the improved CNN on the CIFAR-10 test set and generates:
-- confusion matrix heatmap
-- classification report (precision, recall, F1-score per class)
-- correct prediction examples with confidence scores
-- incorrect prediction examples with confidence scores
-- Grad-CAM visualisations showing where the model focuses
-Saved outputs:
-- outputs/confusion_matrix.png
-- outputs/classification_report.txt
-- outputs/correct_predictions.png
-- outputs/incorrect_predictions.png
-- outputs/gradcam_examples.png
----
-
-## What Each File Does
-
-### `src/data_loader.py`
-Loads CIFAR-10 from Keras, normalises pixel values to [0,1], and one-hot encodes the labels. Returns train/test splits and class names.
-
-Trains the current best CIFAR-10 model. If `outputs/baseline_results.json` is missing, run `src/train_baseline.py` first so the script can print the comparison table.
+Trains the improved architecture with augmented data and adaptive callbacks. Run `cifar10/src/train_baseline.py` first if `cifar10/outputs/baseline_results.json` does not exist — it is needed to print the comparison table.
 
 Outputs:
 
-- `outputs/CNN_improved_v3.keras` for the best checkpoint
-- `outputs/CNN_improved_v3_final.keras` for the final saved model state
-- `outputs/improved_v3_results.json`
-- `outputs/improved_v3_training_curves.png`
-- TensorBoard logs in `logs/improved_v3/`
+- `cifar10/outputs/CNN_improved_v3.keras` — best checkpoint
+- `cifar10/outputs/CNN_improved_v3_final.keras` — final model state
+- `cifar10/outputs/improved_v3_results.json`
+- `cifar10/outputs/improved_v3_training_curves.png`
 
-View logs with:
-
+To view TensorBoard logs after training:
 ```bash
-tensorboard --logdir=logs/improved_v3
+tensorboard --logdir=cifar10/logs/improved_v3
 ```
 
 #### Transfer learning with ResNet50
 
-### `src/evaluate_gradcam.py`
-- Loads the trained improved CNN from `outputs/CNN_improved.keras`
-- Evaluates the model on the CIFAR-10 test set
-- Generates a confusion matrix heatmap
-- Prints and saves a classification report
-- Shows correct and incorrect predictions with confidence scores
-- Implements Grad-CAM visualisations to highlight image regions the model focuses on
-- Prints the most common class confusions for error analysis
----
 ```bash
-python src/transfer_learning.py
+python cifar10/src/transfer_learning.py
 ```
 
-Runs a two-phase CIFAR-10 transfer-learning experiment with ResNet50 and saves the trained model plus plots to `outputs/`.
+Runs a two-phase CIFAR-10 transfer-learning experiment with ResNet50 and saves the trained model plus plots to `cifar10/outputs/`.
+
+#### Model evaluation
+
+```bash
+python cifar10/src/evaluate_all_models.py
+```
+
+Evaluates trained CIFAR-10 models on the test set and generates:
+- confusion matrix heatmap
+- classification report (precision, recall, F1-score per class)
+- correct and incorrect prediction examples with confidence scores
+- Grad-CAM visualisations showing where the model focuses
 
 #### Predict on a CIFAR-10 image
 
 ```bash
-python src/predict.py --model outputs/CNN_improved_v3.keras --image path/to/image.png
+python cifar10/src/predict.py --model cifar10/outputs/CNN_improved_v3.keras --image path/to/image.png
 ```
 
 If `--image` is omitted, the script uses a random sample from the CIFAR-10 test set.
@@ -294,22 +272,24 @@ python cifar100/src/predict.py --image path/to/image.jpg --model cifar100/output
 
 | Path | Purpose |
 |---|---|
-| `src/train_baseline.py` | Baseline CIFAR-10 training and result logging |
-| `src/augmentation.py` | CIFAR-10 augmentation preview and comparison experiment |
-| `src/model_improved_cnn.py` | Residual CIFAR-10 architecture definition |
-| `src/train_improved.py` | Main CIFAR-10 improved training pipeline |
-| `src/transfer_learning.py` | CIFAR-10 ResNet50 transfer-learning experiment |
-| `src/predict.py` | CIFAR-10 single-image inference |
+| `cifar10/src/train_baseline.py` | Baseline CIFAR-10 training and result logging |
+| `cifar10/src/augmentation.py` | CIFAR-10 augmentation preview and comparison experiment |
+| `cifar10/src/model_improved_cnn.py` | Residual CIFAR-10 architecture definition |
+| `cifar10/src/train_improved.py` | Main CIFAR-10 improved training pipeline |
+| `cifar10/src/transfer_learning.py` | CIFAR-10 ResNet50 transfer-learning experiment |
+| `cifar10/src/evaluate_all_models.py` | CIFAR-10 evaluation, confusion matrix, and Grad-CAM |
+| `cifar10/src/predict.py` | CIFAR-10 single-image inference |
 | `cifar100/src/train.py` | CIFAR-100 CNN training pipeline |
 | `cifar100/src/transfer_learning.py` | CIFAR-100 EfficientNetB3 transfer learning |
 | `cifar100/src/predict.py` | CIFAR-100 single-image inference |
-| `test/` | Lightweight smoke tests for loaders, augmentation, CNNs, and transfer learning |
+| `cifar10/test/` | Lightweight smoke tests for loaders, augmentation, CNNs, and transfer learning |
+| `cifar100/test/` | Lightweight smoke tests for CIFAR-100 data loader and CNN |
 
 ## Reproducibility Notes
 
 - The project uses the official Keras CIFAR dataset loaders.
-- Headline results in this README come from the JSON files currently saved in `outputs/` and `cifar100/outputs/`.
-- `src/train_improved.py` uses a stratified train/validation split and keeps the test set for final evaluation.
+- Headline results in this README come from the JSON files currently saved in `cifar10/outputs/` and `cifar100/outputs/`.
+- `cifar10/src/train_improved.py` uses a stratified train/validation split and keeps the test set for final evaluation.
 - Some earlier educational scripts are more demonstration-oriented than benchmark-oriented, so validation handling is not identical across every experiment.
 
 ## References
